@@ -1,0 +1,16 @@
+################################################################################
+#
+#   Files for git to ignore
+#
+################################################################################
+
+# Python compiled libraries
+*.pyc
+*.so
+*.pyd
+
+# Static libraries
+*.a
+
+# Temporary build files
+build/*
