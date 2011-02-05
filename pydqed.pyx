@@ -137,10 +137,10 @@ cdef class DQED:
         self.Neq = Neq
 
         # Determine required sizes of work arrays
-        Nt = 5                         # if not using option 15
-        Na = Ncons + 2 * Nvars + Nt    # if not using option 14
-        liwork = 3 * Ncons + 9 * Nvars + 4 * Nt + Na + 10 + 1
-        lrwork = Na * (Na + 4 + 2) + Nvars * (Nt + 33) + (Neq + max(Neq,Nvars) + 14) * Nt + 9 * Ncons + 26 
+        Nt = 5                             # if not using option 15
+        Na = Ncons + 2 * Nvars + Nt + 1    # if not using option 14
+        liwork = 3 * Ncons + 9 * Nvars + 4 * Nt + Na + 10
+        lrwork = Na * (Na + 6) + Nvars * (Nt + 33) + (Neq + max(Neq,Nvars) + 14) * Nt + 9 * Ncons + 26 + 12
 
         # Allocate work arrays
         self.rwork = numpy.zeros(lrwork, numpy.float64)
