@@ -83,7 +83,7 @@ cdef class DQED:
         self.Ncons = 0
         self.Neq = 0
     
-    cpdef initialize(self, int Neq, int Nvars, int Ncons):
+    cpdef initialize(self, int Neq, int Nvars, int Ncons, list bounds=None):
         """
         Initialize the DQED solver.
         """
@@ -113,9 +113,26 @@ cdef class DQED:
         self.iopt[0] = 99       # No further options are changed
 
         # Set up bounds arrays
-        self.ind = 4 * numpy.ones((Nvars), numpy.int32)
+        bounds = bounds or [(None,None) for i in range(Nvars)]
+        if len(bounds) != Nvars:
+            raise DQEDError('If bounds are specified, they must be specified for every unknown variable.')
+        self.ind = numpy.zeros((Nvars), numpy.int32)
         self.bl = numpy.zeros((Nvars), numpy.float64)
-        self.bu = numpy.zeros((Nvars), numpy.float64)    
+        self.bu = numpy.zeros((Nvars), numpy.float64)
+        for i in range(len(bounds)):
+            bl, bu = bounds[i]
+            if bl is not None and bu is None:
+                self.ind[i] = 1
+                self.bl[i] = bl
+            elif bl is None and bu is not None:
+                self.ind[i] = 2
+                self.bu[i] = bu
+            elif bl is not None and bu is not None:
+                self.ind[i] = 3
+                self.bl[i] = bl
+                self.bu[i] = bu
+            else:
+                self.ind[i] = 4 
     
     def solve(self, numpy.ndarray[numpy.float64_t,ndim=1] x0):
         """
