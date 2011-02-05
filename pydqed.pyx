@@ -28,6 +28,16 @@
 This `Cython <http://www.cython.org/>`_ module exposes the DQED bounded 
 constrained nonlinear optimization code to Python and provides a Python 
 extension type, the :class:`DQED` base class, for working with DQED.
+
+To use DQED, write a Python class or Cython extension type that derives from
+the :class:`DQED` class and implement the :meth:`evaluate` method.
+Run by calling the :meth:`initialize` method to set the solver parameters, then 
+by using the :meth:`solve` method to execute the optimization or solve.
+
+You can implement your derived class in pure Python, but for a significant
+speed boost consider using Cython to compile the module. You can see the
+proper Cython syntax for the residual and jacobian methods by looking at the
+corresponding methods in the :class:`DASSL` base class.
 """
 
 import math
@@ -193,7 +203,23 @@ cdef class DQED:
         """
         Using the initial guess `x0`, return the least-squares solution to the
         set of nonlinear algebraic equations defined by the :meth:`evaluate` 
-        method of the derived class.        
+        method of the derived class. This is the method that actually conducts
+        the call to DQED. Returns the solution vector and a flag indicating
+        the status of the solve. The possible output values of the flag are:
+        
+        ======== ===============================================================
+        Value    Meaning
+        ======== ===============================================================
+        2        The norm of the residual is zero; the solution vector is a root of the system
+        3        The bounds on the trust region are being encountered on each step; the solution vector may or may not be a local minimum
+        4        The solution vector is a local minimum
+        5        A significant amount of noise or uncertainty has been observed in the residual; the solution may or may not be a local minimum
+        6        The solution vector is only changing by small absolute amounts; the solution may or may not be a local minimum
+        7        The solution vector is only changing by small relative amounts; the solution may or may not be a local minimum
+        8        The maximum number of iterations has been reached; the solution is the best found, but may or may not be a local minimum
+        9-18     An error occurred during the solve operation; the solution is not a local minimum 
+        ======== ===============================================================        
+        
         """
         
         # Make sure the length of the initial guess matches the expected number of variables
