@@ -83,9 +83,43 @@ cdef class DQED:
         self.Ncons = 0
         self.Neq = 0
     
-    cpdef initialize(self, int Neq, int Nvars, int Ncons, list bounds=None):
+    cpdef initialize(self, int Neq, int Nvars, int Ncons, list bounds=None, 
+        double tolf=1e-5, double told=1e-5, double tolx=1e-5, int maxIter=100, 
+        bint verbose=False):
         """
-        Initialize the DQED solver.
+        Initialize the DQED solver. The required parameters are:
+
+        * `Neq` - The number of algebraic equations.
+        
+        * `Nvars` - The number of unknown variables.
+        
+        * `Ncons` - The number of constraint equations.
+        
+        The optional parameters are:
+        
+        * `bounds` - A list of 2-tuples giving the lower and upper bound for
+          each unknown variable. Use ``None`` if there is no bound in one or
+          either direction. If provided, you must give bounds for every unknown
+          variable.
+        
+        * `tolf` - The tolerance used for stopping when the norm of the 
+          residual has absolute length less than `tolf`, i.e.
+          :math:`\| \vector{f} \| \le \epsilon_f.
+        
+        * `told` - The tolerance used for stopping when changes to the unknown
+          variables has absolute length less than `told`, i.e.
+          :math:`\| \Delta \vector{x} \| \le \epsilon_d.
+        
+        * `tolx` - The tolerance used for stopping when changes to the unknown
+          variables has relative length less than `tolx`, i.e.
+          :math:`\| \Delta \vector{x} \| \le \epsilon_x \cdot \| \vector{x} \|`.
+        
+        * `maxIter` - The maximum number of iterations to use
+        
+        * `verbose` - ``True`` to have DQED print extra information about the
+          solve, ``False`` to only see printed output when the solver has an
+          error.
+        
         """
         
         self.Nvars = Nvars
@@ -107,10 +141,30 @@ cdef class DQED:
         self.iwork[1] = liwork
 
         # Allocate options arrays
-        self.ropt = numpy.zeros(1, numpy.float64)
-        self.iopt = numpy.zeros(1, numpy.int32)
+        self.ropt = numpy.zeros(3, numpy.float64)
+        self.iopt = numpy.zeros(13, numpy.int32)
         
-        self.iopt[0] = 99       # No further options are changed
+        self.iopt[0] = 1         # Change the verbosity of the printed output
+        self.iopt[1] = 1 if verbose else 0   # The desired output verbosity
+        
+        self.iopt[2] = 2         # Change the number of iterations
+        self.iopt[3] = maxIter   # Maximum number of iterations
+        
+        self.iopt[4] = 4         # Set the option to change the value of TOLF
+        self.iopt[5] = 1         # Where in ROPT to look for the new value
+        self.ropt[0] = tolf      # New value for TOLF
+        
+        self.iopt[6] = 5         # Set the option to change the value of TOLX
+        self.iopt[7] = 2         # Where in ROPT to look for the new value
+        self.ropt[1] = tolx      # New value for TOLX
+        
+        self.iopt[8] = 6         # Set the option to change the value of TOLD
+        self.iopt[9] = 3         # Where in ROPT to look for the new value
+        self.ropt[2] = told      # New value for TOLD
+        
+        self.iopt[10] = 17       # Do not allow the flag IGO to return the value IGO=3
+        self.iopt[11] = 1        # Forces a full model step
+        self.iopt[12] = 99       # No further options are changed
 
         # Set up bounds arrays
         bounds = bounds or [(None,None) for i in range(Nvars)]
@@ -132,7 +186,8 @@ cdef class DQED:
                 self.bl[i] = bl
                 self.bu[i] = bu
             else:
-                self.ind[i] = 4 
+                self.ind[i] = 4
+    
     
     def solve(self, numpy.ndarray[numpy.float64_t,ndim=1] x0):
         """
