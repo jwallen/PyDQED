@@ -86,7 +86,7 @@ cdef class DQED:
     """
     
     cdef public int Nvars, Ncons, Neq
-    cdef numpy.ndarray rwork, iwork, ropt, iopt, ind, bl, bu, x
+    cdef numpy.ndarray rwork, iwork, ropt, iopt, ind, bl, bu, x, fnorm, fjac
 
     def __init__(self):
         self.Nvars = 0
@@ -222,55 +222,71 @@ cdef class DQED:
         
         """
         
+        cdef int igo
+        cdef numpy.ndarray[numpy.float64_t,ndim=1] x
+        
+        self.fjac = numpy.zeros((self.Neq+self.Ncons, self.Nvars+1), numpy.float64, order='F')
+        self.fnorm = numpy.zeros((self.Neq), numpy.float64)
+        
         # Make sure the length of the initial guess matches the expected number of variables
         if len(x0) != self.Nvars:
             raise DQEDError('Expected %i values of x0, got %i.' % (self.Nvars, len(x0)))
         self.x = x0
+        
+        # Call DQED
+        igo = self.dqed(self.Neq, self.Nvars, self.Ncons, 
+            self.ind, self.bl, self.bu, self.x, self.fnorm, self.fjac,
+            self.iopt, self.ropt, self.iwork, self.rwork)
+        
+        # Return the result to the user
+        x = self.x
+        return x, igo
+    
+    cdef int dqed(self, int Neq, int Nvars, int Ncons, 
+        numpy.ndarray[numpy.int32_t,ndim=1] ind,
+        numpy.ndarray[numpy.float64_t,ndim=1] bl,
+        numpy.ndarray[numpy.float64_t,ndim=1] bu,
+        numpy.ndarray[numpy.float64_t,ndim=1] x,
+        numpy.ndarray[numpy.float64_t,ndim=1] fnorm,
+        numpy.ndarray[numpy.float64_t,ndim=2] fjac,
+        numpy.ndarray[numpy.int32_t,ndim=1] iopt,
+        numpy.ndarray[numpy.float64_t,ndim=1] ropt,
+        numpy.ndarray[numpy.int32_t,ndim=1] iwork,
+        numpy.ndarray[numpy.float64_t,ndim=1] rwork):
+        
+        cdef int ldfjac = self.Neq + self.Ncons
+        cdef int igo = 0
+        cdef void* dqedev = <void*> evaluate
         
         # Set the global DQED object to this object (so we can get back to
         # this object's residual and jacobian methods
         global dqedObject
         dqedObject = self
         
-        cdef int lrw = self.rwork.shape[0]
-        cdef int liw = self.iwork.shape[0]
-        cdef int ldfjac = self.Neq + self.Ncons
-        cdef int igo = 0
-        
-        cdef numpy.ndarray[numpy.float64_t,ndim=1] rnorm, x
-        cdef numpy.ndarray[numpy.float64_t,ndim=2] fjac
-        fjac = numpy.zeros((self.Neq+self.Ncons, self.Nvars), numpy.float64)
-        rnorm = numpy.zeros((self.Neq), numpy.float64)
-        
-        cdef void* dqedev = <void*> evaluate
-        
-        # Call DQED
         dqed_(
             dqedev,
-            &(self.Neq),
-            &(self.Nvars),
-            &(self.Ncons),
-            <int*> self.ind.data,
-            <numpy.float64_t*> self.bl.data,
-            <numpy.float64_t*> self.bu.data,
-            <numpy.float64_t*> self.x.data,
+            &(Neq),
+            &(Nvars),
+            &(Ncons),
+            <int*> ind.data,
+            <numpy.float64_t*> bl.data,
+            <numpy.float64_t*> bu.data,
+            <numpy.float64_t*> x.data,
             <numpy.float64_t*> fjac.data,
             &(ldfjac),
-            <numpy.float64_t*> rnorm.data,
+            <numpy.float64_t*> fnorm.data,
             &(igo),
-            <int*> self.iopt.data,
-            <numpy.float64_t*> self.ropt.data,
-            <int*> self.iwork.data,
-            <numpy.float64_t*> self.rwork.data,
+            <int*> iopt.data,
+            <numpy.float64_t*> ropt.data,
+            <int*> iwork.data,
+            <numpy.float64_t*> rwork.data,
         )
         
         # Unset the global DQED object
         dqedObject = None
         
-        # Return the result to the user
-        x = self.x
-        return x, igo
-        
+        return igo
+    
     def evaluate(self, numpy.ndarray[numpy.float64_t,ndim=1] x):
         """
         Evaluate the nonlinear equations and constraints for this system, and
