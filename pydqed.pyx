@@ -178,11 +178,11 @@ cdef class DQED:
 
         # Set up bounds arrays
         bounds = bounds or [(None,None) for i in range(Nvars)]
-        if len(bounds) != Nvars:
+        if len(bounds) != Nvars + Ncons:
             raise DQEDError('If bounds are specified, they must be specified for every unknown variable.')
-        self.ind = numpy.zeros((Nvars), numpy.int32)
-        self.bl = numpy.zeros((Nvars), numpy.float64)
-        self.bu = numpy.zeros((Nvars), numpy.float64)
+        self.ind = numpy.zeros((Nvars+Ncons), numpy.int32)
+        self.bl = numpy.zeros((Nvars+Ncons), numpy.float64)
+        self.bu = numpy.zeros((Nvars+Ncons), numpy.float64)
         for i in range(len(bounds)):
             bl, bu = bounds[i]
             if bl is not None and bu is None:
@@ -314,18 +314,21 @@ cdef class DQED:
 cdef DQED dqedObject
 
 cdef void evaluate(double* x, double* fj, int* ldfj, int* igo, int* iopt, double* ropt):
-    cdef numpy.ndarray[numpy.float64_t,ndim=1] res
+    
+    cdef numpy.ndarray[numpy.float64_t,ndim=1] f, fcons
     cdef numpy.ndarray[numpy.float64_t,ndim=2] J, Jcons
-    cdef int i, j, Neq, Nvars, Ncons, M
-    res, J, Jcons = dqedObject.evaluate(dqedObject.x)
+    cdef int i, j, Neq, Nvars, Ncons
+    
+    f, J, fcons, Jcons = dqedObject.evaluate(dqedObject.x)
+    
     Neq = J.shape[0]
     Nvars = J.shape[1]
     Ncons = Jcons.shape[0]
-    M = Neq + Ncons
     for i in range(Neq):
-        fj[Nvars*M+Ncons+i] = res[i]
+        dqedObject.fjac[Ncons+i,Nvars] = f[i]
         for j in range(Nvars):
-            fj[j*M+Ncons+i] = J[i,j]
+            dqedObject.fjac[Ncons+i,j] = J[i,j]
     for i in range(Ncons):
+        dqedObject.fjac[i,Nvars] = fcons[i]
         for j in range(Nvars):
-            fj[j*M+i] = Jcons[i,j]
+            dqedObject.fjac[i,j] = Jcons[i,j]
