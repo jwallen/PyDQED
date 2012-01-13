@@ -90,3 +90,14 @@ following command from the base package directory after the ``make`` command
 (you may need root privileges for this)::
 
     # python setup.py install
+
+Mac
+---
+
+Very much like the linux, but if you have installed gfortran via homebrew,
+(`brew install gfortran`) then you may need to tell the makefile where to 
+find the libraries::
+
+    $ export LIBRARY_PATH=/usr/local/lib/gcc
+    $ make
+    $ make install
