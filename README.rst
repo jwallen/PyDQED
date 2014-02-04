@@ -101,3 +101,12 @@ find the libraries::
     $ export LIBRARY_PATH=/usr/local/lib/gcc
     $ make
     $ make install
+
+If you have a new Lion (OS X 10.7) installation without gcc-4.2, your numpy
+distutils will probably try to link with clang, which ignores the LIBRARY_PATH.
+If you link with gcc, it may get confused by the i386 and x86_64 bundle.
+You can fix both of these problems by first typing the line::
+
+    $ export LDSHARED='gcc -bundle -undefined dynamic_lookup -arch x86_64' 
+
+
