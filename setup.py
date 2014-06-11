@@ -5,7 +5,7 @@
 #
 #   PyDQED - A Python wrapper for the DQED constrained nonlinear optimization code
 #
-#   Copyright (c) 2011 by Joshua W. Allen (jwallen@mit.edu)
+#   Copyright (c) 2011 by Joshua W. Allen (joshua.w.allen@gmail.com)
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the 'Software'),
@@ -53,7 +53,7 @@ setup(name='PyDQED',
     version='0.1.0',
     description='A Python wrapper to the DQED bounded constrained nonlinear optimization code',
     author='Joshua W. Allen',
-    author_email='jwallen@mit.edu',
+    author_email='joshua.w.allen@gmail.com',
     url='http://github.com/jwallen/PyDQED',
     py_modules=['pydqed'],
     cmdclass = {'build_ext': build_ext},

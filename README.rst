@@ -16,7 +16,7 @@ functions, and running the solver.
 License
 =======
 
-Copyright (c) 2011 by Joshua W. Allen (jwallen@mit.edu).
+Copyright (c) 2011 by Joshua W. Allen (joshua.w.allen@gmail.com).
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the 'Software'),
